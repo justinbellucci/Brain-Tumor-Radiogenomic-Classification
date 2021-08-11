@@ -44,6 +44,8 @@ Thumbs.db
 *.json
 *._pycache_
 *.pytest_cache
+data/**
+data_test/**
 
 # Models
 *.tar.gz
