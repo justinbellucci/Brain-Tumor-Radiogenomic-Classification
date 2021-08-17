@@ -1,5 +1,5 @@
 import numpy as np
-
+import torch
 
 # helper functions
 def process_dicom_image(path: str) -> np.ndarray:
@@ -55,3 +55,50 @@ def get_middle_image(path: str) -> np.ndarray:
     image = process_dicom_image(image_path_list[idx])
     
     return image
+
+################ UPDATE ################
+# create a PyTorch Custom Dataset to be used in DataLoader
+class BrainScanDataset(Dataset):
+    """ MRI brain scan dataset. """
+    def __init__(self, data_dir, transform=None):
+        """
+            Args:
+             data_dir (str): Path to the data folder
+             train (str): 'train' or 'test' depending on what you want
+             transform (bool): Apply transforms
+        """
+        self.data_dir = data_dir
+        
+        # get training labels
+        train_labels_df = pd.read_csv(os.path.join(self.data_dir, 'train_labels.csv'))
+        label_id = train_labels_df[train_labels_df.columns[0]] # BraTS21ID
+        label_y = train_labels_df[train_labels_df.columns[1]] # MGMT_value
+        self.train_labels = {str(l_id).zfill(5): y for l_id, y in zip(label_id, label_y)}
+        
+        # TODO: Correct for Testing and Training
+        self.train_path = os.path.join(data_dir, 'train')
+        
+        # get patient ids
+        self.id_path_list = [path for path in sorted(glob.glob(self.train_path + '/*'))]
+        self.id_list = [path.split('/')[-1] for path in sorted(glob.glob(self.train_path + '/*'))]
+        
+        # TODO: Remove [00109, 00123, 00709] if they exist
+        
+        # TODO: image transforms
+        self.transform = transform
+        
+    def __len__(self):
+        return len(self.id_path_list)
+    
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+            
+        images = get_patient_images(self.id_path_list[idx])
+        labels = self.train_labels[self.id_list[idx]]
+        
+        imgs_tensor = torch.tensor(images, dtype=torch.float32).permute(-1, 0, 1, 2) # need to reshape
+        print(imgs_tensor.shape)
+        labels_tensor = torch.tensor(labels, dtype=torch.long)
+        
+        return imgs_tensor, labels_tensor
