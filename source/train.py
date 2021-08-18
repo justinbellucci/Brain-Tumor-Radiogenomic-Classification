@@ -6,10 +6,12 @@ import pandas as pd
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import torch.utils.data
+from torch.utils.data import Dataset, DataLoader
 
 # import EfficientNet-3D model from https://github.com/shijianjian/EfficientNet-PyTorch-3D
 from efficientnet_pytorch_3d import EfficientNet3D
+
+from helpers import BrainScanDataset
 
 # sagemaker specific
 def model_fn(model_dir)
@@ -41,18 +43,18 @@ def model_fn(model_dir)
     print("Done loading model.")
     return model
 
-# TODO: need to update for custom data
-def _get_train_data_loader(batch_size, training_dir):
-    print("Get train data loader.")
+def _get_train_data_loader(batch_size, data_dir):
+    print("Getting training and validation data loaders...")
 
-#     train_data = pd.read_csv(os.path.join(training_dir, "train.csv"), header=None, names=None)
-
-#     train_y = torch.from_numpy(train_data[[0]].values).float().squeeze()
-#     train_x = torch.from_numpy(train_data.drop([0], axis=1).values).float()
-
-#     train_ds = torch.utils.data.TensorDataset(train_x, train_y)
-
-    return torch.utils.data.DataLoader(train_ds, batch_size=batch_size)
+    # create training and validation datasets
+    train_dataset = BrainScanDataset(data_dir, split='train')
+    valid_dataset = BrainScanDataset(data_dir, split='valid')
+    
+    # create training and validation DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
+    
+    return train_loader, valid_loader
 
 # TODO: Update to work with EfficientNet-3D
 # training function
@@ -107,7 +109,8 @@ if __name__ == '__main__':
     # set automatically - Do not need to change
     parser.add_argument('--output-data-dir', type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
     parser.add_argument('--model-dir', type=str, default=os.environ['SM_MODEL_DIR'])
-    parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAIN'])
+    # TODO: The data-dir could be wrong. Need to point it to s3 Radiogenomic/train
+    parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAIN']) 
     
     # Training Parameters, given
     parser.add_argument('--batch-size', type=int, default=10, metavar='N',
@@ -137,8 +140,7 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
 
     # Load the training data.
-    # TODO: add custom dataloader
-    train_loader = _get_train_data_loader(args.batch_size, args.data_dir)
+    train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir)
 
     # instantiate model with input arguments
     # TODO: instantiate EfficientNet-3D 
