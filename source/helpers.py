@@ -90,6 +90,11 @@ def train_val_split(path: str, val_ratio=0.10):
     # read in train_labels.csv file
     train_labels_df = pd.read_csv(os.path.join(path, 'train_labels.csv'))
 
+    # drop [00109, 00123, 00709]
+    train_labels_df.drop(train_labels_df.loc[train_labels_df['BraTS21ID']==109].index, inplace=True)
+    train_labels_df.drop(train_labels_df.loc[train_labels_df['BraTS21ID']==123].index, inplace=True)
+    train_labels_df.drop(train_labels_df.loc[train_labels_df['BraTS21ID']==709].index, inplace=True)
+    
     # separate into two dataframes. 
     mask = train_labels_df['MGMT_value'] == 1
     df_pos = train_labels_df[mask] # MGMT_value == 1
