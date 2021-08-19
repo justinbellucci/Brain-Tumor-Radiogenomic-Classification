@@ -132,7 +132,7 @@ def get_patient_images(path):
         Returns:
             np.array of size (256, 256, 128, 4)
     """
-    seq_len = 128
+    seq_len = 64
 
     # get the path of MRI seq subfolder
     flair_path = os.path.join(path, 'FLAIR')
