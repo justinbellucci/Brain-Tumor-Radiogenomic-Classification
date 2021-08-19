@@ -29,8 +29,9 @@ def model_fn(model_dir)
     # Determine the device and construct the model.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # TODO: Add model here
-#     model = BinaryClassifier(model_info['input_features'], model_info['hidden_dim'], model_info['output_dim'])
+    model = EfficientNet3D.from_name(model_name = model_info['model_name'], 
+                                     override_params = model_info['output_dim'], 
+                                     in_channels = model_info['input_dim']) 
 
     # Load the stored model parameters.
     model_path = os.path.join(model_dir, 'model.pth')
@@ -56,25 +57,28 @@ def _get_train_data_loader(batch_size, data_dir):
     
     return train_loader, valid_loader
 
-# TODO: Update to work with EfficientNet-3D
 # training function
-def train(model, train_loader, epochs, criterion, optimizer, device):
+def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device):
     """ This is the training method that is called by the PyTorch training script. 
     
         Parameters:
             model        - The PyTorch model that we wish to train.
             train_loader - The PyTorch DataLoader that should be used during training.
+            valid_loader - The PyTorch DataLoader that should be used during validation.
             epochs       - The total number of epochs to train for.
             criterion    - The loss function used for training. 
             optimizer    - The optimizer to use during training.
             device       - Where the model and data should be loaded (gpu or cpu).
     """
-    # TODO: Add training and validation loss.
+    
     for epoch in range(1, epochs + 1):
+        
+        # ----- Training pass -----
         model.train() # Make sure that the model is in training mode.
 
-        total_loss = 0
-
+        train_loss = 0.0
+        valid_loss = 0.0
+        
         for batch in train_loader:
             # get data
             batch_x, batch_y = batch
@@ -85,17 +89,33 @@ def train(model, train_loader, epochs, criterion, optimizer, device):
             optimizer.zero_grad()
 
             # get predictions from model
-            y_pred = model(batch_x)
+            outputs = model(batch_x)
             
             # perform backprop
-            loss = criterion(y_pred, batch_y)
+            loss = criterion(outputs, batch_y)
             loss.backward()
             optimizer.step()
             
-            total_loss += loss.data.item()
+            train_loss += loss.data.item()
 
-        print("Epoch: {}, Loss: {}".format(epoch, total_loss / len(train_loader)))
+        print("Epoch: {}, Loss: {}".format(epoch, train_loss / len(train_loader)))
+        
+        # ----- Validation pass -----
+        model.eval()
+        for batch in valid_loader:
+            # get data
+            batch_x, batch_y = batch
+            
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+            
+            output = model(batch_x)
+            loss = criterion(output, batch_y)
+        
+            valid_loss += loss.data.item()
 
+        print("Epoch: {}, Loss: {}".format(epoch, valid_loss / len(valid_loader)))
+        
 if __name__ == '__main__':
     
     # All of the model parameters and training parameters are sent as arguments
@@ -113,21 +133,14 @@ if __name__ == '__main__':
     parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAIN']) 
     
     # Training Parameters, given
-    parser.add_argument('--batch-size', type=int, default=10, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=5, metavar='N',
                         help='input batch size for training (default: 10)')
+    parser.add_argument('--input_dim', type=int, default=4, metavar='IN',
+                        help='number of input dimensions to model (default: 4)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
-    
-    # Model Parameters
-    # TODO: Update params
-#     parser.add_argument('--input_features', type=int, default=8, metavar='IN',
-#                         help='number of input features to model (default: 8)')
-#     parser.add_argument('--hidden_dim', type=int, default=25, metavar='N',
-#                         help='number of hidden dimensions (default: 25)')
-#     parser.add_argument('--output_dim', type=int, default=1, metavar='OUT',
-#                         help='number of output dimensions (default: 1)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
     
@@ -143,24 +156,25 @@ if __name__ == '__main__':
     train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir)
 
     # instantiate model with input arguments
-    # TODO: instantiate EfficientNet-3D 
-#     model = BinaryClassifier(args.input_features, args.hidden_dim, args.output_dim)
+    model = EfficientNet3D.from_name(model_name = 'efficientnet-b5', 
+                                     override_params = {'num_classes': 2}, 
+                                     in_channels = args.input_dim)
+    
     model.to(device) # move model to GPU if available, else CPU
 
-    # TODO: Check if this is correct
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    criterion = nn.BCELoss() # Binary Cross Entropy loss function
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.02)
+    criterion = nn.CrossEntropyLoss() 
 
     # Trains the model (given line of code, which calls the above training function)
-    train(model, train_loader, args.epochs, criterion, optimizer, device)
+    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device)
 
     model_info_path = os.path.join(args.model_dir, 'model_info.pth')
-    # TODO: save other vars specific to EfficientNet-3D
+
     with open(model_info_path, 'wb') as f:
         model_info = {
-            'input_features': args.input_features,
-            'hidden_dim': args.hidden_dim,
-            'output_dim': args.output_dim,
+            'model_name': 'efficientnet-b5',
+            'input_dim': args.input_dim,
+            'output_dim': {'num_classes': 2},
             'epochs': args.epochs,
             'lr': args.lr
         }
