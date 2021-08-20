@@ -14,7 +14,7 @@ from efficientnet_pytorch_3d import EfficientNet3D
 from helpers import BrainScanDataset
 
 # sagemaker specific
-def model_fn(model_dir)
+def model_fn(model_dir):
     """Load the PyTorch model from the `model_dir` directory."""
     print("Loading model.")
 
@@ -44,12 +44,12 @@ def model_fn(model_dir)
     print("Done loading model.")
     return model
 
-def _get_train_data_loader(batch_size, data_dir):
+def _get_train_data_loader(batch_size, data_dir, val_ratio):
     print("Getting training and validation data loaders...")
 
     # create training and validation datasets
-    train_dataset = BrainScanDataset(data_dir, split='train')
-    valid_dataset = BrainScanDataset(data_dir, split='valid')
+    train_dataset = BrainScanDataset(data_dir=data_dir, split='train', val_ratio=val_ratio)
+    valid_dataset = BrainScanDataset(data_dir=data_dir, split='valid', val_ratio=val_ratio)
     
     # create training and validation DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -143,6 +143,8 @@ if __name__ == '__main__':
                         help='random seed (default: 1)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
+    parser.add_argument('--val_ratio', type=float, default=0.15, metavar='VR',
+                        help='validation dataset ratio (default: 0.15)')
     
     # args holds all passed-in arguments
     args = parser.parse_args()
@@ -153,7 +155,7 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
 
     # Load the training data.
-    train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir)
+    train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir, args.val_ratio)
 
     # instantiate model with input arguments
     model = EfficientNet3D.from_name(model_name = 'efficientnet-b5', 
@@ -176,6 +178,7 @@ if __name__ == '__main__':
             'input_dim': args.input_dim,
             'output_dim': {'num_classes': 2},
             'epochs': args.epochs,
+            'val_ratio': args.val_ratio,
             'lr': args.lr
         }
         torch.save(model_info, f)
