@@ -76,7 +76,7 @@ def get_middle_image(path: str) -> np.ndarray:
     
     return image
 
-def train_val_split(path: str, val_ratio=0.10):
+def train_val_split(path: str, val_ratio):
     """ Splits the train_labels.csv file into training and validation
         dataframes to be used in the DataSet Class.
         
@@ -186,7 +186,7 @@ def get_patient_images(path):
 # PyTorch Custom Dataset to be used in DataLoader
 class BrainScanDataset(Dataset):
     """ MRI brain scan dataset. """
-    def __init__(self, data_dir, split='train', val_ratio=0.10, transform=None):
+    def __init__(self, data_dir, split, val_ratio, transform=None):
         """
             Args:
              data_dir (str): Path to the data folder
@@ -196,7 +196,7 @@ class BrainScanDataset(Dataset):
         self.data_dir = data_dir
         
         # get training labels
-        t_df, v_df = train_val_split(data_dir, val_ratio=val_ratio)
+        t_df, v_df = train_val_split(data_dir, val_ratio)
         
         if split == 'train':
             labels_df = t_df
