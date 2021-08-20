@@ -1,0 +1,7 @@
+###### requirements.txt for train.py execution ######
+
+# external libraries
+pydicom
+
+# external models
+git+https://github.com/shijianjian/EfficientNet-PyTorch-3D
