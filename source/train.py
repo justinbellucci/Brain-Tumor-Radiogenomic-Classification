@@ -130,7 +130,7 @@ if __name__ == '__main__':
     parser.add_argument('--output-data-dir', type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
     parser.add_argument('--model-dir', type=str, default=os.environ['SM_MODEL_DIR'])
     # TODO: The data-dir could be wrong. Need to point it to s3 Radiogenomic/train
-    parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAIN']) 
+    parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAINING']) 
     
     # Training Parameters, given
     parser.add_argument('--batch-size', type=int, default=5, metavar='N',
