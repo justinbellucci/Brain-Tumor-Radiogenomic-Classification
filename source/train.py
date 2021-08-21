@@ -54,7 +54,7 @@ def _get_train_data_loader(batch_size, data_dir, val_ratio):
     # create training and validation DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
-    
+    print("Done getting dataloaders!")
     return train_loader, valid_loader
 
 # training function
@@ -129,11 +129,10 @@ if __name__ == '__main__':
     # set automatically - Do not need to change
     parser.add_argument('--output-data-dir', type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
     parser.add_argument('--model-dir', type=str, default=os.environ['SM_MODEL_DIR'])
-    # TODO: The data-dir could be wrong. Need to point it to s3 Radiogenomic/train
     parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAINING']) 
     
     # Training Parameters, given
-    parser.add_argument('--batch-size', type=int, default=5, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=3, metavar='N',
                         help='input batch size for training (default: 10)')
     parser.add_argument('--input_dim', type=int, default=4, metavar='IN',
                         help='number of input dimensions to model (default: 4)')
