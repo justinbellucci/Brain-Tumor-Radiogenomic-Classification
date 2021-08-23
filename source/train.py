@@ -7,6 +7,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 # import EfficientNet-3D model from https://github.com/shijianjian/EfficientNet-PyTorch-3D
 from efficientnet_pytorch_3d import EfficientNet3D
@@ -58,7 +59,7 @@ def _get_train_data_loader(batch_size, data_dir, val_ratio):
     return train_loader, valid_loader
 
 # training function
-def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device):
+def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device, writer):
     """ This is the training method that is called by the PyTorch training script. 
     
         Parameters:
@@ -69,6 +70,7 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             criterion    - The loss function used for training. 
             optimizer    - The optimizer to use during training.
             device       - Where the model and data should be loaded (gpu or cpu).
+            writer       - SummaryWriter instance for logging model data to Tensorboard
     """
     
     for epoch in range(1, epochs + 1):
@@ -78,10 +80,10 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
 
         train_loss = 0.0
         valid_loss = 0.0
+        correct = 0.0
+        total = 0.0
         
-        for batch in train_loader:
-            # get data
-            batch_x, batch_y = batch
+        for batch_x, batch_y in train_loader:
 
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
@@ -96,26 +98,42 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             loss.backward()
             optimizer.step()
             
-            train_loss += loss.data.item()
-
-        print("Epoch: {}, Loss: {}".format(epoch, train_loss / len(train_loader)))
-        
+            # record training metrics
+            train_loss += loss.item()
+            writer.add_scalar("Running Loss - Train", train_loss, epoch)
+            
         # ----- Validation pass -----
         model.eval()
-        for batch in valid_loader:
-            # get data
-            batch_x, batch_y = batch
-            
+        
+        for batch_x, batch_y in valid_loader:
+
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
             
             output = model(batch_x)
             loss = criterion(output, batch_y)
         
-            valid_loss += loss.data.item()
-
-        print("Epoch: {}, Loss: {}".format(epoch, valid_loss / len(valid_loader)))
+            # record validation metrics
+            _, preds = torch.max(outputs, 1) # may need outputs.data
+            total += batch_y.size(0)
+            correct += (preds == batch_y).sum().item()
+            
+            valid_loss += loss.item()
+            writer.add_scalar("Running Loss - Valid", valid_loss, epoch)
+            writer.add_pr_curve('PR_curve', batch_y.item(), preds.item())
+            
+        train_loss = train_loss / len(train_loader)
+        valid_loss = train_loss / len(valid_loader)
+        accuracy = 100 * correct / total
         
+        # record training/validation metrics for each epoch
+        print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {}".format(
+            epoch, train_loss, valid_loss, accuracy))
+        writer.add_scalar('Training Loss', train_loss, epoch)
+        writer.add_scalar('Validation Loss', valid_loss, epoch)
+        writer.add_scalar('Accuracy', accuracy, epoch)
+        
+
 if __name__ == '__main__':
     
     # All of the model parameters and training parameters are sent as arguments
@@ -152,7 +170,9 @@ if __name__ == '__main__':
     print("Using device {}.".format(device))
 
     torch.manual_seed(args.seed)
-
+    
+    writer = SummaryWriter() # for recording model data to Tensorboard 
+    
     # Load the training data.
     train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir, args.val_ratio)
 
@@ -165,10 +185,13 @@ if __name__ == '__main__':
 
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.02)
     criterion = nn.CrossEntropyLoss() 
-
+#     criterion = nn.BCELoss()
+    
     # Trains the model (given line of code, which calls the above training function)
-    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device)
-
+    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device, writer)
+    
+    writer.flush() # make sure that all pending events have been written to disk
+    
     model_info_path = os.path.join(args.model_dir, 'model_info.pth')
 
     with open(model_info_path, 'wb') as f:
@@ -186,3 +209,5 @@ if __name__ == '__main__':
     model_path = os.path.join(args.model_dir, 'model.pth')
     with open(model_path, 'wb') as f:
         torch.save(model.cpu().state_dict(), f)
+    
+    writer.close() # close the writer since we are done using it
