@@ -2,6 +2,7 @@
 
 # external libraries
 pydicom
+tensorboard
 
 # external models
 git+https://github.com/shijianjian/EfficientNet-PyTorch-3D
