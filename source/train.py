@@ -59,7 +59,7 @@ def _get_train_data_loader(batch_size, data_dir, val_ratio):
     return train_loader, valid_loader
 
 # training function
-def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device, writer):
+def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device):
     """ This is the training method that is called by the PyTorch training script. 
     
         Parameters:
@@ -72,6 +72,7 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             device       - Where the model and data should be loaded (gpu or cpu).
             writer       - SummaryWriter instance for logging model data to Tensorboard
     """
+    writer = SummaryWriter() # for recording model data to Tensorboard
     
     for epoch in range(1, epochs + 1):
         
@@ -100,7 +101,6 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             
             # record training metrics
             train_loss += loss.item()
-            writer.add_scalar("Running Loss - Train", train_loss, epoch)
             
         # ----- Validation pass -----
         model.eval()
@@ -114,18 +114,20 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             loss = criterion(outputs, batch_y)
         
             # record validation metrics
-            _, preds = torch.max(outputs, 1) # may need outputs.data
-#             total += batch_y.size(0)
+            _, preds = torch.max(outputs, 1) 
+            total += batch_y.size(0)
 #             correct += (preds == batch_y).sum().item()
             
             valid_loss += loss.item()
-            writer.add_scalar("Running Loss - Valid", valid_loss, epoch)
 #             writer.add_pr_curve('PR_curve', batch_y.item(), preds.item())
          
         print('\nOutputs shape: ', outputs.shape)
         print('Preds shape:', preds.shape)
         print('Batch_y size:', batch_y.size(0))
         print('Batch_y shape:', batch_y.shape)
+        print('Total: ', total)
+        print('Preds: ', preds)
+        print('Batch_y: ', batch_y)
         
         train_loss = train_loss / len(train_loader)
         valid_loss = train_loss / len(valid_loader)
@@ -138,8 +140,13 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
 #             epoch, train_loss, valid_loss, accuracy))
         writer.add_scalar('Training Loss', train_loss, epoch)
         writer.add_scalar('Validation Loss', valid_loss, epoch)
-#         writer.add_scalar('Accuracy', accuracy, epoch)
-        
+
+    writer.close()    
+# End train loop
+
+##################################
+############## Main ##############
+##################################
 
 if __name__ == '__main__':
     
@@ -176,9 +183,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device {}.".format(device))
 
-    torch.manual_seed(args.seed)
-    
-    writer = SummaryWriter() # for recording model data to Tensorboard 
+    torch.manual_seed(args.seed) 
     
     # Load the training data.
     train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir, args.val_ratio)
@@ -192,12 +197,9 @@ if __name__ == '__main__':
 
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.02)
     criterion = nn.CrossEntropyLoss() 
-#     criterion = nn.BCELoss()
     
     # Trains the model (given line of code, which calls the above training function)
-    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device, writer)
-    
-    writer.flush() # make sure that all pending events have been written to disk
+    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device)
     
     model_info_path = os.path.join(args.model_dir, 'model_info.pth')
 
@@ -217,4 +219,4 @@ if __name__ == '__main__':
     with open(model_path, 'wb') as f:
         torch.save(model.cpu().state_dict(), f)
     
-    writer.close() # close the writer since we are done using it
+    
