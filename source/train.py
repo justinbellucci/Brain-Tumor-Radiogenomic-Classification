@@ -110,28 +110,35 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
             
-            output = model(batch_x)
-            loss = criterion(output, batch_y)
+            outputs = model(batch_x)
+            loss = criterion(outputs, batch_y)
         
             # record validation metrics
             _, preds = torch.max(outputs, 1) # may need outputs.data
-            total += batch_y.size(0)
-            correct += (preds == batch_y).sum().item()
+#             total += batch_y.size(0)
+#             correct += (preds == batch_y).sum().item()
             
             valid_loss += loss.item()
             writer.add_scalar("Running Loss - Valid", valid_loss, epoch)
-            writer.add_pr_curve('PR_curve', batch_y.item(), preds.item())
-            
+#             writer.add_pr_curve('PR_curve', batch_y.item(), preds.item())
+         
+        print('\nOutputs shape: ', outputs.shape)
+        print('Preds shape:', preds.shape)
+        print('Batch_y size:', batch_y.size(0))
+        print('Batch_y shape:', batch_y.shape)
+        
         train_loss = train_loss / len(train_loader)
         valid_loss = train_loss / len(valid_loader)
-        accuracy = 100 * correct / total
+#         accuracy = 100 * correct / total
         
         # record training/validation metrics for each epoch
-        print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {}".format(
-            epoch, train_loss, valid_loss, accuracy))
+        print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f}".format(
+            epoch, train_loss, valid_loss))
+#         print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {}".format(
+#             epoch, train_loss, valid_loss, accuracy))
         writer.add_scalar('Training Loss', train_loss, epoch)
         writer.add_scalar('Validation Loss', valid_loss, epoch)
-        writer.add_scalar('Accuracy', accuracy, epoch)
+#         writer.add_scalar('Accuracy', accuracy, epoch)
         
 
 if __name__ == '__main__':
