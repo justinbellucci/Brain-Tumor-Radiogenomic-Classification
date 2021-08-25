@@ -81,8 +81,8 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
 
         train_loss = 0.0
         valid_loss = 0.0
-        correct = 0.0
-        total = 0.0
+        correct = 0
+        total = 0
         
         for batch_x, batch_y in train_loader:
 
@@ -116,7 +116,7 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             # record validation metrics
             _, preds = torch.max(outputs, 1) 
             total += batch_y.size(0)
-#             correct += (preds == batch_y).sum().item()
+            correct += (preds == batch_y).sum().item()
             
             valid_loss += loss.item()
 #             writer.add_pr_curve('PR_curve', batch_y.item(), preds.item())
@@ -130,17 +130,18 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
         print('Batch_y: ', batch_y)
         
         train_loss = train_loss / len(train_loader)
-        valid_loss = train_loss / len(valid_loader)
-#         accuracy = 100 * correct / total
+        valid_loss = valid_loss / len(valid_loader)
+        accuracy = 100 * correct / total
         
         # record training/validation metrics for each epoch
-        print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f}".format(
-            epoch, train_loss, valid_loss))
-#         print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {}".format(
-#             epoch, train_loss, valid_loss, accuracy))
-        writer.add_scalar('Training Loss', train_loss, epoch)
-        writer.add_scalar('Validation Loss', valid_loss, epoch)
-
+#         print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f}".format(
+#             epoch, train_loss, valid_loss))
+        print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {}".format(
+            epoch, train_loss, valid_loss, accuracy))
+        writer.add_scalar('Training Loss', train_loss)
+        writer.add_scalar('Validation Loss', valid_loss)
+        writer.add_scalar('Validation Loss', accuracy)
+        
     writer.close()    
 # End train loop
 
