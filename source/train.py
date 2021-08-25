@@ -59,7 +59,7 @@ def _get_train_data_loader(batch_size, data_dir, val_ratio):
     return train_loader, valid_loader
 
 # training function
-def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device):
+def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device, writer):
     """ This is the training method that is called by the PyTorch training script. 
     
         Parameters:
@@ -72,8 +72,6 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             device       - Where the model and data should be loaded (gpu or cpu).
             writer       - SummaryWriter instance for logging model data to Tensorboard
     """
-    writer = SummaryWriter() # for recording model data to Tensorboard
-    
     for epoch in range(1, epochs + 1):
         
         # ----- Training pass -----
@@ -116,33 +114,23 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             # record validation metrics
             _, preds = torch.max(outputs, 1) 
             total += batch_y.size(0)
-            correct += (preds == batch_y).sum().item()
+            correct += (preds.detach().item() == batch_y.detach().item())
             
             valid_loss += loss.item()
-#             writer.add_pr_curve('PR_curve', batch_y.item(), preds.item())
          
-        print('\nOutputs shape: ', outputs.shape)
-        print('Preds shape:', preds.shape)
-        print('Batch_y size:', batch_y.size(0))
-        print('Batch_y shape:', batch_y.shape)
-        print('Total: ', total)
-        print('Preds: ', preds)
-        print('Batch_y: ', batch_y)
-        
         train_loss = train_loss / len(train_loader)
         valid_loss = valid_loss / len(valid_loader)
         accuracy = 100 * correct / total
         
         # record training/validation metrics for each epoch
-#         print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f}".format(
-#             epoch, train_loss, valid_loss))
-        print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {}".format(
+        print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {:.7f}".format(
             epoch, train_loss, valid_loss, accuracy))
-        writer.add_scalar('Training Loss', train_loss)
-        writer.add_scalar('Validation Loss', valid_loss)
-        writer.add_scalar('Validation Loss', accuracy)
         
-    writer.close()    
+        writer.add_scalar('loss/train', train_loss, epoch)
+        writer.add_scalar('loss/valid', valid_loss, epoch)
+        writer.add_scalar('train/accuracy', accuracy, epoch)
+        writer.flush()
+        
 # End train loop
 
 ##################################
@@ -188,7 +176,9 @@ if __name__ == '__main__':
     
     # Load the training data.
     train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir, args.val_ratio)
-
+    
+    writer = SummaryWriter() # for recording model data to Tensorboard
+    
     # instantiate model with input arguments
     model = EfficientNet3D.from_name(model_name = 'efficientnet-b5', 
                                      override_params = {'num_classes': 2}, 
@@ -200,7 +190,8 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss() 
     
     # Trains the model (given line of code, which calls the above training function)
-    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device)
+    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device, writer)
+    writer.close()
     
     model_info_path = os.path.join(args.model_dir, 'model_info.pth')
 
