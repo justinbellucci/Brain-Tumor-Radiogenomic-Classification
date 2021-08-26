@@ -68,7 +68,7 @@ def predict_fn(input_data, model):
     # Process input_data so that it is ready to be sent to our model.
     data = torch.from_numpy(input_data.astype('float32'))
     data = data.to(device)
-dd
+
     # Put the model into evaluation mode
     model.eval()
 
