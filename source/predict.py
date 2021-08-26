@@ -1,18 +1,15 @@
 import argparse
 import json
 import os
-import pandas as pd
 import io
-
+import numpy as np
 import torch
-import torch.optim as optim
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from six import BytesIO
 
-# import EfficientNet-3D model from https://github.com/shijianjian/EfficientNet-PyTorch-3D
 from efficientnet_pytorch_3d import EfficientNet3D
 
-# from helpers import BrainScanTestDataset
+# default content type is numpy array
+NP_CONTENT_TYPE = 'application/x-npy'
 
 # sagemaker specific
 def model_fn(model_dir):
@@ -45,24 +42,42 @@ def model_fn(model_dir):
     print("Done loading model.")
     return model
 
-################ TODO ###############
-
+# Provided input data loading
 def input_fn(serialized_input_data, content_type):
     print('Deserializing the input data.')
-    if content_type == 'text/plain':
-        data = serialized_input_data.decode('utf-8')
-        return data
+    if content_type == NP_CONTENT_TYPE:
+        stream = BytesIO(serialized_input_data)
+        return np.load(stream)
     raise Exception('Requested unsupported ContentType in content_type: ' + content_type)
 
+# Provided output data handling
 def output_fn(prediction_output, accept):
     print('Serializing the generated output.')
-    return str(prediction_output)
+    if accept == NP_CONTENT_TYPE:
+        stream = BytesIO()
+        np.save(stream, prediction_output)
+        return stream.getvalue(), accept
+    raise Exception('Requested unsupported ContentType in Accept: ' + accept)
 
-################ TODO ###############
-
+# Provided predict function
 def predict_fn(input_data, model):
     print('Predicting class labels for the input data...')
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.eval()
     
+    # Process input_data so that it is ready to be sent to our model.
+    data = torch.from_numpy(input_data.astype('float32'))
+    data = data.to(device)
+dd
+    # Put the model into evaluation mode
+    model.eval()
+
+    # Compute the result of applying the model to the input data
+    # The variable `out_label` should be a rounded value, either 1 or 0
+    out = model(data)
+    _, preds = torch.max(out, 1)
+    
+    out_np = preds.cpu().detach().numpy()
+    out_label = out_np.round()
+
+    return out_label
