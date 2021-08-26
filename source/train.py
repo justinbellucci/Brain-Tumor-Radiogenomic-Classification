@@ -114,7 +114,7 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
             # record validation metrics
             _, preds = torch.max(outputs, 1) 
             total += batch_y.size(0)
-            correct += (preds.detach().item() == batch_y.detach().item())
+            correct += (preds == batch_y).detach().sum().item()
             
             valid_loss += loss.item()
          
