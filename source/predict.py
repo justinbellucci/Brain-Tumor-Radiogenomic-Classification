@@ -80,4 +80,4 @@ def predict_fn(input_data, model):
     out_np = preds.cpu().detach().numpy()
     out_label = out_np.round()
 
-    return out_label
+    return {'predictions': out_label}
