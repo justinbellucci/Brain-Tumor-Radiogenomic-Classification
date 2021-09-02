@@ -59,7 +59,7 @@ def _get_train_data_loader(batch_size, data_dir, val_ratio):
     return train_loader, valid_loader
 
 # training function
-def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device, writer):
+def train(model, train_loader, valid_loader, epochs, criterion, optimizer, device):
     """ This is the training method that is called by the PyTorch training script. 
     
         Parameters:
@@ -126,10 +126,10 @@ def train(model, train_loader, valid_loader, epochs, criterion, optimizer, devic
         print("Epoch: {} -- Training Loss: {:.5f} -- Validation Loss: {:.5f} -- Accuracy: {:.7f}".format(
             epoch, train_loss, valid_loss, accuracy))
         
-        writer.add_scalar('loss/train', train_loss, epoch)
-        writer.add_scalar('loss/valid', valid_loss, epoch)
-        writer.add_scalar('train/accuracy', accuracy, epoch)
-        writer.flush()
+#         writer.add_scalar('loss/train', float(train_loss), epoch)
+#         writer.add_scalar('loss/valid', float(valid_loss), epoch)
+#         writer.add_scalar('train/accuracy', float(accuracy), epoch)
+#         writer.flush()
         
 # End train loop
 
@@ -161,10 +161,10 @@ if __name__ == '__main__':
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
-    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
-                        help='learning rate (default: 0.001)')
-    parser.add_argument('--val_ratio', type=float, default=0.15, metavar='VR',
-                        help='validation dataset ratio (default: 0.15)')
+    parser.add_argument('--lr', type=float, default=0.0007, metavar='LR',
+                        help='learning rate (default: 0.0007)')
+    parser.add_argument('--val_ratio', type=float, default=0.20, metavar='VR',
+                        help='validation dataset ratio (default: 0.20)')
     
     # args holds all passed-in arguments
     args = parser.parse_args()
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     # Load the training data.
     train_loader, valid_loader = _get_train_data_loader(args.batch_size, args.data_dir, args.val_ratio)
     
-    writer = SummaryWriter() # for recording model data to Tensorboard
+#     writer = SummaryWriter() # for recording model data to Tensorboard
     
     # instantiate model with input arguments
     model = EfficientNet3D.from_name(model_name = 'efficientnet-b5', 
@@ -187,11 +187,12 @@ if __name__ == '__main__':
     model.to(device) # move model to GPU if available, else CPU
 
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.02)
-    criterion = nn.CrossEntropyLoss() 
+    
+    criterion = nn.CrossEntropyLoss()
     
     # Trains the model (given line of code, which calls the above training function)
-    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device, writer)
-    writer.close()
+    train(model, train_loader, valid_loader, args.epochs, criterion, optimizer, device)
+#     writer.close()
     
     model_info_path = os.path.join(args.model_dir, 'model_info.pth')
 

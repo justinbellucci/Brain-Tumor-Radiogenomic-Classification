@@ -61,7 +61,7 @@ def output_fn(prediction_output, accept):
 
 # Provided predict function
 def predict_fn(input_data, model):
-    print('Predicting class labels for the input data...')
+#     print('Predicting class labels for the input data...')
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -78,6 +78,6 @@ def predict_fn(input_data, model):
     _, preds = torch.max(out, 1)
     
     out_np = preds.cpu().detach().numpy()
-    out_label = out_np.round()
+#     out_label = out_np
 
-    return {'predictions': out_label}
+    return {'predictions': out_np}
