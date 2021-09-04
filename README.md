@@ -3,6 +3,7 @@ This is the capstone project for the [Machine Learning Nanodegree](https://www.u
 <p align="center">
 <img width="600" src = "images/mri.png">
 </p>
+
 ## AWS Requirements
 This project was completely build on Sagemaker using the following AWS<sup>[2](#2)</sup> services:
 1. Sagemaker Notebook Instance - ml.m4.xlarge
