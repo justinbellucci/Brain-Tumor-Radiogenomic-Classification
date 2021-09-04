@@ -13,7 +13,7 @@ All necessary prep and feature engineering steps are included in the notebook `0
 
 ## Code Structure
 All source code is located in the main project directory under `./source`. The following directories are included in the project:
-1. `./source/helpers.py` - Helper functions for the project to process images and formate dataset for training.
+1. `./source/helpers.py` - Helper functions for the project to process images and format dataset for training.
 2. `./source/train.py` - Training code for the project.
 3. `./source/predict.py` - Prediction code for the project.
 4. `./source/requirements.txt` - Requirements for loading external libraries on the training instance.
