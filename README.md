@@ -5,7 +5,7 @@ This is the capstone project for the [Machine Learning Nanodegree](https://www.u
 </p>
 
 ## AWS Requirements
-This project was completely build on Sagemaker using the following AWS<sup>[2](#2)</sup> services:
+This project was built using the following AWS<sup>[2](#2)</sup> services:
 1. Sagemaker Notebook Instance - ml.m4.xlarge
 2. S3 Storage - s3://Sagemaker_Notebook_Bucket
 3. Training Instance - ml.p2.2xlarge
