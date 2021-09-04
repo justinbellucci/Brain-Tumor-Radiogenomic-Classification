@@ -1,6 +1,8 @@
 # Brain Tumor Radiogenomic Classification
 This is the capstone project for the [Machine Learning Nanodegree](https://www.udacity.com/course/machine-learning-engineer-nanodegree--nd009t) through Udacity. This project is based on the Kaggle competition hosted by the Radiological Society of North America (RSNA). The goal of the this project is to build a model to detect the presence of MGMT promoter methylation in a sequence of magnetic resonance imaging (MRI) sequences. MRI sequences of the brain are taken along three planes: coronal, axial, and sagittal (Figure 1). A typical set MRI sequences will have approximately 400 images. In addition, this project demonstrates the full pipeline of data preparation, feature extraction, and model training on Amazon Web Services (AWS).
-
+<p align="center">
+<img width="600" src = "images/mri.png">
+</p>
 ## AWS Requirements
 This project was completely build on Sagemaker using the following AWS<sup>[2](#2)</sup> services:
 1. Sagemaker Notebook Instance - ml.m4.xlarge
